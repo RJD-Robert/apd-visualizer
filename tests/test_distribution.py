@@ -2,12 +2,15 @@
 import ast
 from concurrent.futures import ThreadPoolExecutor
 from html.parser import HTMLParser
+from http.server import SimpleHTTPRequestHandler
+import importlib.util
 from pathlib import Path
 import re
 import subprocess
 import sys
 import tempfile
 import unittest
+from unittest.mock import patch
 from urllib.request import urlopen
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -96,6 +99,15 @@ class DistributionTests(unittest.TestCase):
                 process.terminate()
                 process.communicate(timeout=10)
                 pool.shutdown(wait=True, cancel_futures=True)
+
+    def test_launcher_starts_without_reverse_dns(self):
+        spec = importlib.util.spec_from_file_location('apd_launcher', ROOT / 'start.py')
+        launcher = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(launcher)
+        with patch('socket.gethostbyaddr', side_effect=AssertionError('Unexpected DNS lookup')):
+            with launcher.LocalHTTPServer(('127.0.0.1', 0), SimpleHTTPRequestHandler) as server:
+                self.assertEqual(server.server_name, '127.0.0.1')
+                self.assertGreater(server.server_port, 0)
 
 
 if __name__ == '__main__':

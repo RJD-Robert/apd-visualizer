@@ -4,8 +4,17 @@ import argparse
 from functools import partial
 from http.server import SimpleHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
+from socketserver import TCPServer
 import threading
 import webbrowser
+
+
+class LocalHTTPServer(ThreadingHTTPServer):
+    def server_bind(self):
+        # The numeric loopback address needs no reverse DNS lookup. Avoid the
+        # HTTPServer default, which can delay startup on offline or CI hosts.
+        TCPServer.server_bind(self)
+        self.server_name, self.server_port = self.server_address[:2]
 
 
 def main():
@@ -15,7 +24,7 @@ def main():
     args = parser.parse_args()
     directory = Path(__file__).resolve().parent / 'dist'
     handler = partial(SimpleHTTPRequestHandler, directory=str(directory))
-    server = ThreadingHTTPServer(('127.0.0.1', args.port), handler)
+    server = LocalHTTPServer(('127.0.0.1', args.port), handler)
     url = f'http://127.0.0.1:{server.server_port}/'
     print(f'APD Visualizer: {url}', flush=True)
     print('Press Ctrl+C to stop. All calculations run in your browser.', flush=True)
