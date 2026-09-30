@@ -1,0 +1,26 @@
+name: Bug report
+description: Report an incorrect model, plot, or interaction.
+title: '[Bug] '
+body:
+  - type: textarea
+    id: example
+    attributes:
+      label: Reproducible example
+      description: Include the expression, reference point, visible domain, and AD kink convention.
+      placeholder: 'f(x,y) = ...; reference = (...); domain = ...; abs slope at zero = ...'
+    validations:
+      required: true
+  - type: textarea
+    id: result
+    attributes:
+      label: Expected and actual result
+      description: Describe the difference. Attach a screenshot if the issue is visual.
+    validations:
+      required: true
+  - type: input
+    id: browser
+    attributes:
+      label: Browser and operating system
+      placeholder: 'Firefox on Linux, Chrome on Windows, Safari on macOS, …'
+    validations:
+      required: true

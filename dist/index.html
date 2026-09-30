@@ -1,0 +1,298 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>APD Visualizer</title>
+    <meta
+      name="description"
+      content="Explore original functions, tangent piecewise affine models and ordinary AD in one or two input dimensions."
+    />
+    <link
+      rel="icon"
+      type="image/svg+xml"
+      href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%23132535'/%3E%3Cpath d='M5 23L13 9L20 23L28 13' fill='none' stroke='%23ef9962' stroke-width='3'/%3E%3C/svg%3E"
+    />
+    <link rel="stylesheet" href="style.css" />
+    <script src="vendor/plotly.min.js" defer></script>
+    <script src="engine.js" defer></script>
+    <script src="app.js" defer></script>
+  </head>
+  <body>
+    <header>
+      <div class="brand">
+        <svg viewBox="0 0 36 36" aria-hidden="true">
+          <rect width="36" height="36" rx="10" fill="#163240" />
+          <path d="M6 25L14 10L22 25L30 14" stroke="#f3ad78" fill="none" stroke-width="2.8" /></svg
+        ><span>APD <b>Visualizer</b></span>
+      </div>
+      <span class="header-note">Automatic piecewise differentiation</span
+      ><button class="quiet" id="help-button">
+        How it works <span aria-hidden="true">↗</span>
+      </button>
+    </header>
+    <div class="shell">
+      <aside>
+        <div class="section-label">FUNCTION SPACE</div>
+        <div class="segmented" role="group" aria-label="Number of input variables">
+          <button id="dim1" class="active" aria-pressed="true">1 input <span>ℝ → ℝ</span></button
+          ><button id="dim2" aria-pressed="false">2 inputs <span>ℝ² → ℝ</span></button>
+        </div>
+        <label for="preset">Explore an example</label
+        ><select id="preset"></select>
+        <p id="example-note" class="hint"></p>
+        <form id="function-form">
+          <label for="expression">Your function <span id="function-label">f(x)</span></label
+          ><textarea
+            id="expression"
+            rows="2"
+            spellcheck="false"
+            autocomplete="off"
+            aria-describedby="syntax-note"
+          >
+abs(x) + 0.25*x^2</textarea
+          ><button class="primary" type="submit">Update function <span>↵</span></button>
+        </form>
+        <details class="syntax">
+          <summary>Expression guide</summary>
+          <p id="syntax-note">
+            Use <code>*</code> to multiply, <code>^</code> or <code>**</code> for powers, and
+            parentheses.
+          </p>
+          <p>
+            <code>abs</code> <code>relu</code> <code>min(a,b)</code> <code>max(a,b)</code>
+            <code>sin</code> <code>cos</code> <code>tan</code> <code>exp</code> <code>log</code>
+            <code>sqrt</code> <code>sinh</code> <code>cosh</code> <code>tanh</code>
+            <code>atan</code> <code>asin</code> <code>acos</code>
+          </p>
+          <p>
+            Constants: <code>pi</code>, <code>e</code>. Angles in radians. Continuous expressions
+            only; no conditionals or floor.
+          </p>
+        </details>
+        <div class="divider"></div>
+        <div class="section-heading">
+          <h2>Reference point</h2>
+          <button id="origin" class="text-button">Set to zero</button>
+        </div>
+        <div class="ref-control">
+          <label for="refx">x₀</label
+          ><input id="refx" type="number" value="0.6" step="any" aria-label="Reference x" /><input
+            id="sliderx"
+            type="range"
+            min="-3"
+            max="3"
+            value="0.6"
+            step="0.01"
+            aria-label="Move reference x"
+          />
+        </div>
+        <div class="ref-control two-only" hidden>
+          <label for="refy">y₀</label
+          ><input id="refy" type="number" value="0.4" step="any" aria-label="Reference y" /><input
+            id="slidery"
+            type="range"
+            min="-3"
+            max="3"
+            value="0.4"
+            step="0.01"
+            aria-label="Move reference y"
+          />
+        </div>
+        <p class="hint" id="move-hint">Move the slider or click the function curve.</p>
+        <label class="range-label">Visible domain</label>
+        <div class="range-row">
+          <span>x</span
+          ><input id="xmin" aria-label="Minimum x" type="number" step="any" value="-3" /><span
+            >to</span
+          ><input id="xmax" aria-label="Maximum x" type="number" step="any" value="3" />
+        </div>
+        <div class="range-row two-only" hidden>
+          <span>y</span
+          ><input id="ymin" aria-label="Minimum y" type="number" step="any" value="-3" /><span
+            >to</span
+          ><input id="ymax" aria-label="Maximum y" type="number" step="any" value="3" />
+        </div>
+        <div class="divider"></div>
+        <h2>Compare models</h2>
+        <label class="toggle"
+          ><span><i class="dot original"></i>Original function</span
+          ><input id="show-f" type="checkbox" checked role="switch" /></label
+        ><label class="toggle"
+          ><span><i class="dot apd"></i>APD · piecewise affine</span
+          ><input id="show-apd" type="checkbox" checked role="switch" /></label
+        ><label class="toggle"
+          ><span><i class="dot ad"></i>AD · affine</span
+          ><input id="show-ad" type="checkbox" checked role="switch"
+        /></label>
+        <label for="kink">AD convention at abs(0)</label
+        ><select id="kink">
+          <option value="0">Slope 0 · symmetric</option>
+          <option value="-1">Slope −1 · negative branch</option>
+          <option value="1">Slope +1 · positive branch</option>
+        </select>
+        <p class="hint">
+          ReLU and min/max use the same abs convention.
+          <span id="kink-explain"
+            >At a tie, ReLU has slope ½ and min/max average the two gradients.</span
+          >
+        </p>
+      </aside>
+      <main>
+        <div id="error" class="error" role="alert" hidden></div>
+        <div class="workspace-heading">
+          <div>
+            <div class="section-label">TANGENT MODEL EXPLORER</div>
+            <h1 id="plot-heading">A smooth curve. A sharp corner.</h1>
+          </div>
+          <button id="reset-view" class="quiet">Reset view</button>
+        </div>
+        <div class="model-summary">
+          <div><span>Reference value</span><strong id="ref-value">—</strong></div>
+          <div><span id="grad-label">AD slope</span><strong id="gradient">—</strong></div>
+          <div><span>At the reference</span><strong id="interpolation">Models agree</strong></div>
+          <div class="kink-state" id="kink-state">Away from switching points</div>
+        </div>
+        <div class="viewbar two-only" hidden>
+          <div class="segmented views" role="group" aria-label="Plot view">
+            <button data-view="overlay" class="active">Surfaces</button
+            ><button data-view="compare">Side by side</button
+            ><button data-view="slice">Cross-section</button
+            ><button data-view="error">Error map</button>
+          </div>
+          <label class="map-choice" id="error-choice" hidden
+            >Error of
+            <select id="error-model">
+              <option value="apd">APD</option>
+              <option value="ad">AD</option>
+            </select></label
+          >
+        </div>
+        <section class="plot-card" aria-label="Function visualization">
+          <div class="plot-caption">
+            <span id="plot-caption">Original function and the two models</span
+            ><span id="plot-gesture">Scroll to zoom · drag to pan</span>
+          </div>
+          <div id="plot" aria-label="Interactive function plot"></div>
+          <div id="compare-plots" hidden>
+            <div>
+              <h3 class="original-text">Original function</h3>
+              <div id="compare-f"></div>
+            </div>
+            <div>
+              <h3 class="apd-text">APD model</h3>
+              <div id="compare-apd"></div>
+            </div>
+            <div>
+              <h3 class="ad-text">AD approximation</h3>
+              <div id="compare-ad"></div>
+            </div>
+          </div>
+          <div class="plot-footer">
+            <span><i class="dot original"></i>Original</span><span><i class="dot apd"></i>APD</span
+            ><span><i class="dot ad"></i>AD</span
+            ><span class="reference-key">◆ Reference point</span
+            ><button id="export-plot" class="text-button">Save plot PNG ↓</button>
+          </div>
+        </section>
+        <div class="slice-controls two-only" hidden>
+          <label for="slice-angle">Cross-section through the reference</label
+          ><input id="slice-angle" type="range" min="0" max="180" step="1" value="0" /><output
+            id="angle-label"
+            for="slice-angle"
+            >0° · along x</output
+          >
+        </div>
+        <div class="insight">
+          <span class="insight-icon">↳</span>
+          <p id="insight">APD keeps the absolute-value corner while linearizing the smooth part.</p>
+        </div>
+        <div id="domain-note" class="notice" hidden></div>
+        <section class="plot-card lower">
+          <div class="plot-caption">
+            <span id="lower-title">Absolute approximation error</span
+            ><span id="error-summary">On the displayed sample grid</span>
+          </div>
+          <div id="lower-plot" aria-label="Approximation error or cross-section plot"></div>
+        </section>
+        <details id="math-details" class="math-details">
+          <summary>
+            <span>Inside the models</span><span>Formulas, propagation & conventions</span>
+          </summary>
+          <div class="math-content">
+            <h2>The two local models</h2>
+            <p>
+              <strong>APD:</strong> P(x) = f(x₀) + Δf(x₀; x − x₀). At every smooth node, freeze its
+              derivative at the original reference value. Keep absolute-value operations exact on
+              the propagated model.
+            </p>
+            <p>
+              <strong>AD:</strong> A(x) = f(x₀) + gᵀ(x − x₀). It propagates a single chosen slope
+              through each switching operation.
+            </p>
+            <div class="formula-box" id="ad-formula"></div>
+            <p>
+              For two inputs, x and x₀ in these formulas denote vectors. APD is a local
+              approximation; moving far from the reference can give large errors. The computational
+              expression matters, even for algebraically equivalent functions.
+            </p>
+            <h3>Your APD computation</h3>
+            <p>
+              Each row defines a model value vᵢ at the query point. Coefficients shown below are
+              rounded to 7 significant digits; plots use full floating-point precision.
+            </p>
+            <div class="table-wrap">
+              <table>
+                <thead>
+                  <tr>
+                    <th>Node</th>
+                    <th>Operation</th>
+                    <th>Reference value</th>
+                    <th>Model rule</th>
+                  </tr>
+                </thead>
+                <tbody id="node-table"></tbody>
+              </table>
+            </div>
+            <p id="model-output"></p>
+            <h3>Kinks and domains</h3>
+            <p>
+              We define abs′(0) = s with selectable s ∈ {−1, 0, 1}. ReLU is treated as (u + |u|)/2,
+              and max/min as (a + b ± |a − b|)/2. Thus at a tie, ReLU uses (1+s)/2; max uses weights
+              ((1+s)/2, (1−s)/2), with the weights reversed for min. This is an explicit
+              implementation convention, and may differ from your AD library. A chosen AD slope is
+              not a unique derivative at a kink.
+            </p>
+            <p>
+              Every smooth elemental operation must have a finite value and derivative at the
+              reference. Invalid original-function samples are omitted; the affine models may extend
+              beyond the original domain. APD lines and surfaces are split at their computed
+              switching points (up to floating-point precision). The original function and error
+              maps use finite sample grids: very narrow features or poles may require a smaller
+              visible domain.
+            </p>
+            <p class="source">
+              Method:
+              <a href="https://arxiv.org/html/1701.04368" target="_blank" rel="noreferrer"
+                >Griewank et al., Piecewise linear secant approximation via algorithmic piecewise
+                differentiation, §2</a
+              >. This explorer implements its single-reference tangent construction.
+            </p>
+          </div>
+        </details>
+        <footer>
+          Local calculations in your browser <span>·</span> Tangent mode <span>·</span> One or two
+          inputs, one output
+        </footer>
+      </main>
+    </div>
+    <dialog id="export-dialog" aria-labelledby="export-title">
+      <div class="export-heading">
+        <h2 id="export-title">Save your plot</h2>
+        <button id="close-export" class="quiet">Close</button>
+      </div>
+      <p id="export-status" role="status"></p>
+      <div id="export-gallery"></div>
+    </dialog>
+  </body>
+</html>

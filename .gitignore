@@ -1,0 +1,11 @@
+.DS_Store
+__pycache__/
+*.py[cod]
+.venv/
+node_modules/
+.openai/
+.sites-runtime/
+APD Visualizer.html
+APD-Visualizer.html
+release/
+tests/validation-report.json

@@ -1,0 +1,5 @@
+dist/vendor/
+APD Visualizer.html
+APD-Visualizer.html
+release/
+tests/validation-report.json
