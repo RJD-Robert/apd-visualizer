@@ -1,5 +1,7 @@
 # APD Visualizer
 
+[![Checks](https://github.com/RJD-Robert/apd-visualizer/actions/workflows/ci.yml/badge.svg)](https://github.com/RJD-Robert/apd-visualizer/actions/workflows/ci.yml)
+
 **Explore how automatic piecewise differentiation preserves a function’s switching structure.**
 
 An interactive browser tool for scalar functions of one or two inputs. Compare the original function, a tangent-mode **piecewise affine APD model**, and the **affine approximation from ordinary AD** at a movable reference point.
