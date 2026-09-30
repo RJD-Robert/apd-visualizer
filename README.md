@@ -1,6 +1,6 @@
 # APD Visualizer
 
-[![Checks](https://github.com/RJD-Robert/apd-visualizer/actions/workflows/ci.yml/badge.svg)](https://github.com/RJD-Robert/apd-visualizer/actions/workflows/ci.yml)
+[![Checks](https://github.com/RJD-Robert/apd-visualizer/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/RJD-Robert/apd-visualizer/actions/workflows/ci.yml)
 
 **Explore how automatic piecewise differentiation preserves a function’s switching structure.**
 
